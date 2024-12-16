@@ -1,640 +1,713 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 
-// Ozanin özelliklerini tanimlamak için global degiskenler
-char ozanAdi[50];
-char calgiAdi[50];
-int can = 100, tokluk = 100, uyku = 100, para = 10;
-int guc = 3, ceviklik = 3, dayaniklilik = 3, karizma = 3, toplayicilik = 3;
-int moral = 100, enerji = 100, hijyen = 100; // Yeni nitelikler
-int ekmekFiyat = 5, yahniFiyat = 20; // Yemeklerin fiyatları
-int ekmekTokluk = 10, yahniTokluk = 50, elmaTokluk = 5; // Tokluk etkileri
-int tecrube = 0; // Tecrübe puanı
-int seviye = 1;  // Karakterin seviyesi
+typedef struct {
+    char name[50];
+    char instrument[50];
+    int health;
+    int hunger;
+    int sleep;
+    int hygiene;
+    int level;
+    int experience;
+    int money;
+    int strength;
+    int agility;
+    int endurance;
+    int charisma;
+    int gathering_skill;
+} Character;
 
-// Fonksiyon prototipleri
-void kampAlani();
-void sifahane();
-void han();
-void macera();
-void seviyeAtla();
-void durumuGoster();
-void moralArtir();
-int oyundanCik(); // Döngüyü kirip kirmama kontrolü için int döner
-void kontrolNitelikler();
-void yemekYemek();
-void uyumak();
+void displayMainMenu();
+void goToCamp(Character *character);
+void goToHealer(Character *character);
+void goToInn(Character *character);
+void goOnAdventure(Character *character);
+void hype(Character *character);
+void sleep(Character *character);
+void eat(Character *character);
+void levelUp(Character *character);
+void showStatus(Character *character);
+void resolveCombat(Character *character, int enemyStrength, int enemyAgility, int enemyEndurance, int minGold, int maxGold, int xpReward);
 
 int main() {
-    // Rastgele sayı üreteci başlatılır
-    srand(time(NULL));
 
-    // Oyun baslangici: Ozanin adini ve çalgisini al
+    Character player = {0};
+
     printf("Ozanin adini girin: ");
-    scanf("%s", ozanAdi);
-    printf("Calginin adini girin: ");
-    scanf("%s", calgiAdi);
+    fgets(player.name, 50, stdin);
+    player.name[strcspn(player.name, "\n")] = '\0';
 
-    printf("\nHos geldin %s! %s adli calgini kullanarak maceralara atilacaksin.\n", ozanAdi, calgiAdi);
+    printf("Ozanin kullandigi calgiyi girin: ");
+    fgets(player.instrument, 50, stdin);
+    player.instrument[strcspn(player.instrument, "\n")] = '\0';
 
-    // Ana menü sonsuz döngüsü
+    player.health = 100;
+    player.hunger = 50;
+    player.sleep = 50;
+    player.hygiene = 50;
+    player.level = 1;
+    player.experience = 0;
+    player.money = 10;
+    player.strength = 3;
+    player.agility = 3;
+    player.endurance = 3;
+    player.charisma = 3;
+    player.gathering_skill = 3;
+
+    int choice;
     while (1) {
-        int secim;
+        displayMainMenu();
+        printf("\nSeciminizi yapin: ");
+        scanf("%d", &choice);
 
-        // Menü seçeneklerini göster
-        printf("\n--- ANA MENU ---\n");
-        printf("1. Kamp alanina git\n");
-        printf("2. Sifahane\n");
-        printf("3. Han\n");
-        printf("4. Maceraya atil\n");
-        printf("5. Seviye atla\n");
-        printf("6. Durumu goster\n");
-        printf("7. Oyundan cik\n");
-        printf("8. Yemek ye\n");
-        printf("9. Uyku cek\n");
-        printf("10. Moral artir\n");
-
-        printf("Seciminizi girin: ");
-        while (scanf("%d", &secim) != 1) {
-            printf("Lutfen gecerli bir sayi girin: ");
-            while (getchar() != '\n'); // Girişi temizle
-        }
-        // Seçime göre iþlemleri yönlendir
-        switch (secim) {
-            case 1:
-                kampAlani();
-                break;
-            case 2:
-                sifahane();
-                break;
-            case 3:
-                han();
-                break;
-            case 4:
-                macera();
-                break;
-            case 5:
-                seviyeAtla();
-                break;
-            case 6:
-                durumuGoster();
-                break;
-            case 7:
-                if (oyundanCik()) { // Eðer kullanici cikmayi onaylarsa döngüyü kir
-                    printf("Oyun kapatiliyor...\n");
-                    return 0; // Programi sonlandir
+        switch (choice) {
+            case 1: goToCamp(&player); break;
+            case 2: goToHealer(&player); break;
+            case 3: goToInn(&player); break;
+            case 4: goOnAdventure(&player); break;
+            case 5: hype(&player); break;
+            case 6: eat(&player); break;
+            case 7: sleep(&player); break;
+            case 8: levelUp(&player); break;
+            case 9: showStatus(&player); break;
+            case 10:
+                printf("Oyundan cikmak istediginize emin misiniz? (E/h): ");
+                char exitChoice;
+                scanf(" %c", &exitChoice);
+                if (exitChoice == 'E' || exitChoice == 'e') {
+                    printf("Oyundan cikiliyor...\n");
+                    exit(0);
+                } else {
+                    printf("Ana menuye donuluyor...\n");
                 }
                 break;
-            case 8:
-                yemekYemek();
-                break;
-            case 9:
-                uyumak();
-                break;
-            case 10:
-                moralArtir();
-                break;
             default:
-                printf("Gecersiz bir secim yaptiniz. Lutfen 1 ile 10 arasinda bir secim yapin.\n");
+                printf("Gecersiz secim. Lutfen tekrar deneyin.\n");
         }
-        // Moral ve enerji kontrolü
-        if (moral < 0) moral = 0;
-        if (enerji < 0) enerji = 0;
     }
 
     return 0;
 }
 
-void kampAlani() {
-    printf("Kamp alani fonksiyonu calisiyor...\n");
+void displayMainMenu() {
+
+    printf("\n=== Ana Menu ===\n");
+    printf("1. Kamp alanina git\n");
+    printf("2. Sifahaneye git\n");
+    printf("3. Hana git\n");
+    printf("4. Maceraya atil\n");
+    printf("5. Moral artir\n");
+    printf("6. Yemek ye\n");
+    printf("7. Uyu\n");
+    printf("8. Seviye atla\n");
+    printf("9. Karakterin durumunu goster\n");
+    printf("10. Oyundan cik\n");
+
 }
 
-void sifahane() {
-    printf("Sifahane fonksiyonu calisiyor...\n");
-}
+void goToCamp(Character *character) {
 
-//han'da kontrolTecrube olmali
-void han() {
-    int secim;
-    printf("\n--- HAN ---\n");
-    printf("1. Sarki soyle (Para kazanmak icin)\n");
-    printf("2. Han'dan ayril\n");
-    printf("Seciminizi yapin: ");
-    scanf("%d", &secim);
-
-    switch (secim) {
-        case 1: // Şarkı söyleme eylemi
-            if (hijyen <= 20) {
-                printf("Hijyen seviyeniz cok dusuk! Sarki soyleyebilmek icin hijyeninizi artirmalisiniz.\n");
-            } else {
-                int kazanilanPara = 10 + karizma * (hijyen / 100.0);
-                para += kazanilanPara;
-                hijyen -= 5; // Şarkı söylemek biraz hijyen kaybına neden olur
-                enerji -= 10; // Şarkı söylemek enerji tüketir
-                printf("Sarki soylediniz! Kazandiginiz para: %d altin\n", kazanilanPara);
-                printf("Hijyeniniz 5 puan azaldi, enerjiniz 10 puan azaldi.\n");
-            }
-            break;
-
-        case 2: // Han'dan çıkış
-            printf("Han'dan ayriliyorsunuz...\n");
-            return;
-
-        default:
-            printf("Gecersiz bir secim yaptiniz. Lutfen tekrar deneyin.\n");
-    }
-
-    // Hijyen sınırlarını kontrol et
-    if (hijyen < 0) hijyen = 0;
-    if (enerji < 0) enerji = 0;
-
-    // Kritik seviyelerde uyarı
-    if (hijyen <= 20) printf("UYARI: Hijyen seviyeniz kritik seviyede!\n");
-    if (enerji <= 20) printf("UYARI: Enerji seviyeniz kritik seviyede!\n");
-
-    kontrolNitelikler(); // Merkezi kontrol
-}
-void macera() {
-    int secim;
-
-    printf("\nMaceraya atildiniz!\n");
+    int choice;
     while (1) {
-        printf("\n--- MACERA ---\n");
-        printf("1. Yakin cevrede sifali bitki topla ve avlan\n");
-        printf("2. Ormani kesfe cik (kolay)\n");
-        printf("3. Kayaliklari kesfe cik (orta)\n");
-        printf("4. Vadiyi kesfe cik (zor)\n");
-        printf("5. Koy meydanina don\n");
-        printf("Seciminizi girin (1-5): ");
-        scanf("%d", &secim);
+        printf("\n=== Kamp Alaný ===\n");
+        printf("1. Kamp atesinin basinda calgi cal/sarki soyle\n");
+        printf("2. Nehirde yikan\n");
+        printf("3. Cadýrýna girip uyu\n");
+        printf("4. Koy meydanina don\n");
+        printf("Seciminizi yapin: ");
+        scanf("%d", &choice);
 
-        // Enerji ve hijyen kontrolü
-        if (enerji <= 10) {
-            printf("Enerji seviyeniz cok dusuk! Maceraya atilmak icin dinlenmelisiniz.\n");
-            break;
-        }
-        if (hijyen <= 10) {
-            printf("Hijyen seviyeniz cok dusuk! Boyle bir durumda maceraya cikamazsiniz.\n");
-            break;
-        }
-
-        // Haydut özellikleri
-        int haydutGuc, haydutCeviklik, haydutDayaniklilik;
-
-        switch (secim) {
-            case 2: // Kolay keşif
-                printf("Ormani kesfe cikiyorsunuz...\n");
-                haydutGuc = 1 + rand() % 3;
-                haydutCeviklik = 1 + rand() % 3;
-                haydutDayaniklilik = 1 + rand() % 3;
-                enerji -= 5;  // Enerji tüketimi
-                hijyen -= 3;  // Hijyen kaybı
-                savas(haydutGuc, haydutCeviklik, haydutDayaniklilik, 30);
+        switch (choice) {
+            case 1:
+                printf("Kamp atesinin basinda calgi caliyor ve sarki soyluyorsunuz...\n");
+                character->charisma += 2;
+                character->hygiene -= 5;
+                character->hunger -= 5;
+                character->experience += 10;
+                printf("Karizma +2, Hijyen -5, Tokluk -5, Tecrube +10\n");
                 break;
 
-            case 3: // Orta keşif
-                printf("Kayaliklari kesfe cikiyorsunuz...\n");
-                haydutGuc = 4 + rand() % 3;
-                haydutCeviklik = 4 + rand() % 3;
-                haydutDayaniklilik = 4 + rand() % 3;
-                enerji -= 10; // Enerji tüketimi
-                hijyen -= 5;  // Hijyen kaybı
-                savas(haydutGuc, haydutCeviklik, haydutDayaniklilik, 60);
+            case 2:
+                printf("Nehirde yikaniyorsunuz...\n");
+                character->hygiene += 20;
+                character->health += 5;
+                character->hunger -= 5;
+                printf("Hijyen +20, Can +5, Tokluk -5\n");
                 break;
 
-            case 4: // Zor keşif
-                printf("Vadiyi kesfe cikiyorsunuz...\n");
-                haydutGuc = 7 + rand() % 4;
-                haydutCeviklik = 7 + rand() % 4;
-                haydutDayaniklilik = 7 + rand() % 4;
-                enerji -= 15; // Enerji tüketimi
-                hijyen -= 8;  // Hijyen kaybı
-                savas(haydutGuc, haydutCeviklik, haydutDayaniklilik, 90);
+            case 3:
+                printf("Cadiriniza girip uyuyorsunuz...\n");
+                character->sleep += 30;
+                character->hunger -= 10;
+                character->health += 10;
+                printf("Uyku +30, Tokluk -10, Can +10\n");
                 break;
 
-            case 1: // Şifalı bitki toplama ve avlanma
-                printf("Yakin cevrede sifali bitki topluyorsunuz...\n");
-                enerji -= 5;  // Enerji tüketimi
-                int sifaliBitkiSans = (toplayicilik * 4);
-
-                if ((rand() % 100) < sifaliBitkiSans) {
-                    printf("Bir sifali bitki buldunuz! Caniniz 10 puan artti.\n");
-                    can += 10;
-                    if (can > 100) can = 100;
-                } else {
-                    printf("Sifali bitki bulamadiniz.\n");
-                }
-
-                if ((rand() % 100) < (sifaliBitkiSans / 2)) {
-                    printf("Meyve topladiniz! Toklugunuz 10 puan artti.\n");
-                    tokluk += 10;
-                    if (tokluk > 100) tokluk = 100;
-                } else {
-                    printf("Meyve toplamakta sansiniz yaver gitmedi.\n");
-                }
-
-                if ((rand() % 100) < 50) {
-                    printf("Av yaptiniz ve bir hayvan eti buldunuz! Toklugunuz 50 puan artti.\n");
-                    tokluk += 50;
-                    if (tokluk > 100) tokluk = 100;
-                } else {
-                    printf("Avda sansiniz yaver gitmedi, bir sey bulamadiniz.\n");
-                }
-                break;
-
-            case 5: // Köy meydanına dönüş
-                printf("Koy meydanina donuyorsunuz...\n");
+            case 4:
+                printf("Kamp alanindan ayrilarak koy meydanina donuyorsunuz...\n");
                 return;
 
             default:
-                printf("Gecersiz bir secim yaptiniz! Lutfen 1 ile 5 arasinda bir secim yapin.\n");
+                printf("Gecersiz secim! Lutfen tekrar deneyin.\n");
         }
 
-        kontrolNitelikler(); // Oyuncu niteliklerini kontrol et
-        kontrolTecrube();    // Tecrübe kontrolü
+        if (character->hygiene > 100) character->hygiene = 100;
+        if (character->hygiene < 0) character->hygiene = 0;
+
+        if (character->health > 100) character->health = 100;
+        if (character->health < 0) character->health = 0;
+
+        if (character->hunger > 100) character->hunger = 100;
+        if (character->hunger < 0) character->hunger = 0;
+
+        if (character->sleep > 100) character->sleep = 100;
+        if (character->sleep < 0) character->sleep = 0;
     }
 }
 
+void goToHealer(Character *character) {
 
-void yemekYemek() {
-    int secim;
-    printf("\n--- YEMEK MENUSU ---\n");
-    printf("1. Ekmek (5 altin, +10 tokluk, -5 uyku)\n");
-    printf("2. Yahni (20 altin, +50 tokluk, -10 uyku)\n");
-    printf("3. Elma (Ucretsiz, +5 tokluk, -2 uyku)\n");
-    printf("Seciminizi yapin: ");
-    scanf("%d", &secim);
-
-    switch (secim) {
-        case 1: // Ekmek
-            if (para >= ekmekFiyat) {
-                para -= ekmekFiyat;
-                tokluk += ekmekTokluk;
-                uyku -= 5; // Yemek yeme uyku kaybına sebep olur
-                printf("Ekmek yediniz. Toklugunuz %d puan artti. Uykunuz 5 puan azaldi.\n", ekmekTokluk);
-            } else {
-                printf("Yeterli paraniz yok!\n");
-            }
-            break;
-
-        case 2: // Yahni
-            if (para >= yahniFiyat) {
-                para -= yahniFiyat;
-                tokluk += yahniTokluk;
-                uyku -= 10; // Daha ağır yemek, daha fazla uyku kaybı
-                printf("Yahni yediniz. Toklugunuz %d puan artti. Uykunuz 10 puan azaldi.\n", yahniTokluk);
-            } else {
-                printf("Yeterli paraniz yok!\n");
-            }
-            break;
-
-        case 3: // Elma
-            tokluk += elmaTokluk;
-            uyku -= 2; // Elma yemek hafif bir eylem
-            printf("Elma yediniz. Toklugunuz %d puan artti. Uykunuz 2 puan azaldi.\n", elmaTokluk);
-            break;
-
-        default:
-            printf("Gecersiz secim yaptiniz! Lutfen tekrar deneyin.\n");
-    }
-
-    // Nitelik sınırlarını kontrol et
-    if (tokluk > 100) tokluk = 100;
-    if (uyku > 100) uyku = 100;
-    if (tokluk < 0) tokluk = 0;
-    if (uyku < 0) uyku = 0;
-
-    // Kritik seviye uyarıları
-    if (uyku <= 20) printf("UYARI: Uyku seviyeniz kritik derecede dusuk!\n");
-    if (tokluk <= 20) printf("UYARI: Tokluk seviyeniz kritik derecede dusuk!\n");
-
-    // Can kaybı mekanizması (herhangi bir nitelik sıfırsa)
-    if (tokluk == 0) {
-        printf("Tokluk 0'a dustu! Caniniz 20 puan azaldi.\n");
-        can -= 20;
-    }
-    if (uyku == 0) {
-        printf("Uyku 0'a dustu! Caniniz 10 puan azaldi.\n");
-        can -= 10;
-    }
-
-    // Nitelikleri kontrol et
-    kontrolNitelikler();
-}
-
-void savas(int dusmanGuc, int dusmanCeviklik, int dusmanDayaniklilik, int tecrubeKazan) {
-    printf("\nBir haydutla karsilastiniz!\n");
-    printf("Haydut Gucu: %d, Ceviklik: %d, Dayaniklilik: %d\n", dusmanGuc, dusmanCeviklik, dusmanDayaniklilik);
-
-    while (can > 0 && dusmanDayaniklilik > 0) {
-        int secim;
-        printf("\n--- SAVAS TURU ---\n");
-        printf("1. Saldir\n");
-        printf("2. Kacmaya Calis\n");
+    int choice;
+    while (1) {
+        printf("\n=== Sifahane ===\n");
+        printf("1. Sifacidan yaralarini sarmasini iste (5 altin)\n");
+        printf("2. Sifacidan merhem yapip surmesini iste (10 altin)\n");
+        printf("3. Koy meydanina don\n");
         printf("Seciminizi yapin: ");
-        scanf("%d", &secim);
+        scanf("%d", &choice);
 
-        if (secim == 2) { // Kaçma girişimi
-            int kacmaSans = (4 * ceviklik) / 100.0 * 100; // Formüle göre kaçma şansı
-            if ((rand() % 100) < kacmaSans) {
-                printf("Basariyla kactiniz! Savas sona erdi.\n");
-                return; // Başarılı kaçış
-            } else {
-                printf("Kacamadiniz! Turunuzu harcadiniz ve rakip saldiriya geciyor...\n");
-            }
-        }
-
-        // Savaş sırası kontrolü
-        int ozanIlkSaldiri = ceviklik > dusmanCeviklik || (ceviklik == dusmanCeviklik && rand() % 2);
-
-        if (ozanIlkSaldiri) { // Ozan saldırıyor
-            int verilenHasar = 4 * guc; // Rakibe verilen hasar
-            dusmanDayaniklilik -= verilenHasar;
-            printf("Saldirdiniz! Rakibe %d hasar verdiniz. Dusman Dayanikliligi: %d\n", verilenHasar, dusmanDayaniklilik);
-        } else { // Rakip saldırıyor
-            int RVH = 4 * dusmanGuc; // Rakibin verdiği ham hasar
-            int alinanHasar = RVH - (RVH * (dayaniklilik * 4 / 100) - 1); // Alınan hasar formülü
-            if (alinanHasar < 0) alinanHasar = 0; // Negatif hasarı sıfıra ayarla
-            can -= alinanHasar;
-            printf("Rakip saldirdi! %d hasar aldiniz. Caniniz: %d\n", alinanHasar, can);
-        }
-
-        if (dusmanDayaniklilik <= 0) { // Düşman yenildi
-            printf("Dusmani yendiniz! %d tecrube kazandiniz.\n", tecrubeKazan);
-            tecrube += tecrubeKazan;
-            break;
-        }
-
-        if (can <= 0) { // Ozan yenildi
-            printf("Haydut sizi yendi! Macera sona erdi.\n");
-            break;
-        }
-
-        // Durum özeti
-        printf("Caniniz: %d | Dusman Dayanikliligi: %d\n", can, dusmanDayaniklilik);
-    }
-}
-
-
-void uyumak() {
-    int secim;
-    printf("\n--- UYKU MENUSU ---\n");
-    printf("1. Kisa uyku (+20 uyku, -10 tokluk)\n");
-    printf("2. Orta uyku (+50 uyku, -20 tokluk)\n");
-    printf("3. Uzun uyku (+100 uyku, -30 tokluk)\n");
-    printf("Seciminizi yapin: ");
-    scanf("%d", &secim);
-
-    switch (secim) {
-        case 1: // Kısa uyku
-            if (uyku == 100) {
-                printf("Zaten tamamen dinlenmişsiniz, daha fazla uyuyamazsınız!\n");
-                break;
-            }
-            uyku += 20;
-            enerji += 10;
-            tokluk -= 10;
-            printf("Kisa bir uyku cektiniz. Uyku seviyeniz 20 puan artti. Toklugunuz 10 puan azaldi.\n");
-            break;
-
-        case 2: // Orta uyku
-            if (uyku == 100) {
-                printf("Zaten tamamen dinlenmişsiniz, daha fazla uyuyamazsınız!\n");
-                break;
-            }
-            uyku += 50;
-            enerji += 25;
-            tokluk -= 20;
-            printf("Orta uzunlukta bir uyku cektiniz. Uyku seviyeniz 50 puan artti. Toklugunuz 20 puan azaldi.\n");
-            break;
-
-        case 3: // Uzun uyku
-            if (uyku == 100) {
-                printf("Zaten tamamen dinlenmişsiniz, daha fazla uyuyamazsınız!\n");
-                break;
-            }
-            uyku += 100;
-            enerji += 50;
-            tokluk -= 30;
-            printf("Uzun bir uyku cektiniz. Uyku seviyeniz 100 puan artti. Toklugunuz 30 puan azaldi.\n");
-            break;
-
-        default:
-            printf("Gecersiz secim yaptiniz! Lutfen tekrar deneyin.\n");
-            return; // İşlemi tekrar başlat
-    }
-
-    // Nitelik sınırlarını kontrol et
-    if (uyku > 100) uyku = 100;
-    if (enerji > 100) enerji = 100;
-    if (tokluk < 0) tokluk = 0;
-
-    // Kritik seviye uyarıları
-    if (tokluk <= 20) printf("UYARI: Tokluk seviyeniz kritik derecede dusuk!\n");
-
-    // Can kaybı mekanizması
-    if (tokluk == 0) {
-        printf("Tokluk 0'a dustu! Caniniz 20 puan azaldi.\n");
-        can -= 20;
-    }
-
-    // Nitelikleri kontrol et
-    kontrolNitelikler();
-}
-
-
-void moralArtir() {
-    int secim;
-    printf("\n1. Kamp Atesi (+10 moral)\n");
-    printf("2. Hikaye Anlatma (+20 moral)\n");
-    printf("3. Sarki Soyleme (+50 moral, 5 enerji harcar)\n");
-    printf("Seciminizi yapin: ");
-    scanf("%d", &secim);
-
-    switch (secim) {
-        case 1:
-            moral += 10;
-            printf("Kamp atesinde vakit gecirdiniz. Moraliniz 10 puan artti.\n");
-            break;
-        case 2:
-            moral += 20;
-            printf("Hikaye anlattiniz. Moraliniz 20 puan artti.\n");
-            break;
-        case 3:
-            if (enerji >= 5) {
-                moral += 50;
-                enerji -= 5;
-                if (enerji < 0) enerji = 0;
-                printf("Sarki soylediniz. Moraliniz 50 puan artti ve 5 enerji harcadiniz.\n");
-            } else {
-                printf("Yeterli enerjiniz yok!\n");
-            }
-            break;
-        default:
-            printf("Gecersiz secim yaptiniz!\n");
-    }
-
-    if (moral > 100) moral = 100; // Maksimum moral kontrolü
-}
-
-void seviyeAtla() {
-    printf("\nSeviye atlama fonksiyonu calisiyor...\n");
-    int puan = 5;
-    while (puan > 0) {
-        int secim;
-        printf("Kalan puan: %d\n", puan);
-        printf("1. Guc\n2. Ceviklik\n3. Dayaniklilik\n4. Karizma\n5. Toplayicilik\n6. Yaraticilik\n");
-        printf("7. Ana menuye don\n");
-        printf("Hangi ozellige puan eklemek istersiniz? ");
-        scanf("%d", &secim);
-
-        if (secim == 7) {
-            printf("Ana menuye donuluyor...\n");
-            return; // Ana menüye döner
-        }
-
-        switch (secim) {
+        switch (choice) {
             case 1:
-                if (guc <25 ) {
-                        guc++;
-                        printf("Guc artirildi!\n");
+                if (character->money >= 5) {
+                    printf("Sifaci yaralarinizi sardi.\n");
+                    character->money -= 5;
+                    character->health += 20;
+                    printf("Can +20, Para -5\n");
+                } else {
+                    printf("Yeterli paraniz yok! (Gerekli: 5 altin)\n");
                 }
-                else printf("Guc maksimum seviyede ! \n");
+                break;
+
+            case 2:
+                if (character->money >= 10) {
+                    printf("Sifaci size ozel bir merhem yaptý ve surdu.\n");
+                    character->money -= 10;
+                    character->health += 40;
+                    printf("Can +40, Para -10\n");
+                } else {
+                    printf("Yeterli paraniz yok! (Gerekli: 10 altin)\n");
+                }
+                break;
+
+            case 3:
+                printf("Sifahaneden ayrilarak koy meydanina donuyorsunuz...\n");
+                return;
+
+            default:
+                printf("Gecersiz secim! Lutfen tekrar deneyin.\n");
+        }
+
+        if (character->health > 100) character->health = 100;
+        if (character->health < 0) character->health = 0;
+    }
+}
+
+void goToInn(Character *character) {
+
+    int choice;
+    while (1) {
+        printf("\n=== Han ===\n");
+        printf("1. Yiyecek satin al ve ye (10 altin)\n");
+        printf("2. Icecek satin al, ic ve eglen (5 altýn)\n");
+        printf("3. Enstruman cal ve sarki soyle\n");
+        printf("4. Koy meydanina don\n");
+        printf("Seciminizi yapin: ");
+        scanf("%d", &choice);
+
+        switch (choice) {
+            case 1:
+                if (character->money >= 10) {
+                    printf("Yemek yediniz. Kendinizi daha iyi hissediyorsunuz!\n");
+                    character->money -= 10;
+                    character->hunger += 30;
+                    character->health += 10;
+                    printf("Tokluk +30, Can +10, Para -10\n");
+                } else {
+                    printf("Yeterli paraniz yok! (Gerekli: 10 altin)\n");
+                }
+                break;
+
+            case 2:
+                if (character->money >= 5) {
+                    printf("Icecek ictiniz ve eglendiniz. Ruh haliniz duzeldi!\n");
+                    character->money -= 5;
+                    character->hunger += 10;
+                    character->charisma += 5;
+                    character->hygiene -= 10;
+                    printf("Tokluk +10, Karizma +5, Hijyen -10, Para -5\n");
+                } else {
+                    printf("Yeterli paraniz yok! (Gerekli: 5 altin)\n");
+                }
+                break;
+
+            case 3:
+                if (character->hygiene > 20) {
+                    printf("Enstruman calýp sarki soylediniz. Han sakinleri cok eglendi!\n");
+                    int earnedMoney = 10 + (character->charisma * character->hygiene) / 100;
+                    character->money += earnedMoney;
+                    character->experience += 20;
+                    printf("Para +%d, Tecrube +20\n", earnedMoney);
+                } else {
+                    printf("Hijyeniniz cok dusuk (20 veya alti)! Handa sarki soyleyemezsiniz.\n");
+                }
+                break;
+
+            case 4:
+                printf("Handan ayrilarak koy meydanina donuyorsunuz...\n");
+                return;
+
+            default:
+                printf("Gecersiz secim! Lutfen tekrar deneyin.\n");
+        }
+
+        if (character->hunger > 100) character->hunger = 100;
+        if (character->hunger < 0) character->hunger = 0;
+
+        if (character->health > 100) character->health = 100;
+        if (character->health < 0) character->health = 0;
+
+        if (character->charisma > 25) character->charisma = 25;
+        if (character->charisma < 3) character->charisma = 3;
+
+        if (character->hygiene > 100) character->hygiene = 100;
+        if (character->hygiene < 0) character->hygiene = 0;
+    }
+}
+
+void goOnAdventure(Character *character) {
+
+    int choice;
+    srand(time(NULL));
+
+    while (1) {
+        printf("\n=== Macera ===\n");
+        printf("1. Yakýn cevreden sifali bitki topla ve avlan\n");
+        printf("2. Ormani kesfe cik (Kolay)\n");
+        printf("3. Kayaliklari kesfe cik (Orta)\n");
+        printf("4. Vadiyi kesfe cik (Zor)\n");
+        printf("5. Koy meydanina don\n");
+        printf("Seciminizi yapin: ");
+        scanf("%d", &choice);
+
+        switch (choice) {
+            case 1: {
+                printf("Yakin cevrede bitki ve avlanma denemesi yapiyorsunuz...\n");
+                int gatherChance = (character->gathering_skill * 4);
+                int randomValue = rand() % 100 + 1;
+                if (randomValue <= gatherChance) {
+                    printf("Sifali bir bitki buldunuz! Caniniz 10 artti.\n");
+                    character->health += 10;
+                } else if (randomValue <= gatherChance * 2) {
+                    printf("Meyve buldunuz! Toklugunuz 10 artti.\n");
+                    character->hunger += 10;
+                } else if (randomValue <= gatherChance * 3 / 2) {
+                    printf("Av hayvani yakaladiniz! Toklugunuz 50 artti.\n");
+                    character->hunger += 50;
+                } else {
+                    printf("Hicbir sey bulamadiniz.\n");
+                }
+                character->hunger -= 10;
+                printf("Tokluk -10\n");
+                break;
+            }
+
+            case 2: {
+                printf("Ormani kesfe cikiyorsunuz (Kolay)...\n");
+                int enemyStrength = rand() % 3 + 1;
+                int enemyAgility = rand() % 3 + 1;
+                int enemyEndurance = rand() % 3 + 1;
+                printf("Dusman Gucu: %d, Ceviklik: %d, Dayaniklilik: %d\n", enemyStrength, enemyAgility, enemyEndurance);
+                resolveCombat(character, enemyStrength, enemyAgility, enemyEndurance, 15, 25, 30);
+                break;
+            }
+
+            case 3: {
+                printf("Kayaliklari kesfe cikiyorsunuz (Orta)...\n");
+                int enemyStrength = rand() % 3 + 4;
+                int enemyAgility = rand() % 3 + 4;
+                int enemyEndurance = rand() % 3 + 4;
+                printf("Dusman Gucu: %d, Ceviklik: %d, Dayaniklilik: %d\n", enemyStrength, enemyAgility, enemyEndurance);
+                resolveCombat(character, enemyStrength, enemyAgility, enemyEndurance, 30, 50, 60);
+                break;
+            }
+
+            case 4: {
+                printf("Vadiyi kesfe cikiyorsunuz (Zor)...\n");
+                int enemyStrength = rand() % 4 + 7;
+                int enemyAgility = rand() % 4 + 7;
+                int enemyEndurance = rand() % 4 + 7;
+                printf("Dusman Gucu: %d, Ceviklik: %d, Dayaniklilik: %d\n", enemyStrength, enemyAgility, enemyEndurance);
+                resolveCombat(character, enemyStrength, enemyAgility, enemyEndurance, 55, 75, 90);
+                break;
+            }
+
+            case 5:
+                printf("Macera alanindan ayrilarak koy meydanina donuyorsunuz...\n");
+                return;
+
+            default:
+                printf("Gecersiz secim! Lutfen tekrar deneyin.\n");
+        }
+
+        if (character->health > 100) character->health = 100;
+        if (character->health < 0) character->health = 0;
+
+        if (character->hunger > 100) character->hunger = 100;
+        if (character->hunger < 0) character->hunger = 0;
+    }
+}
+
+void resolveCombat(Character *character, int enemyStrength, int enemyAgility, int enemyEndurance, int minGold, int maxGold, int xpReward) {
+
+    int escapeChance = (character->agility * 4);
+    int randomValue = rand() % 100 + 1;
+    if (randomValue <= escapeChance) {
+        printf("Kacmayi basardiniz!\n");
+        return;
+    } else {
+        printf("Kacmayi basaramadiniz. Savas basliyor!\n");
+    }
+
+    int characterAttack = 4 * character->strength;
+    int enemyAttack = 4 * enemyStrength;
+    while (character->health > 0 && enemyStrength > 0) {
+        if (character->agility >= enemyAgility) {
+
+            int damage = characterAttack - (characterAttack * enemyEndurance / 100);
+            if (damage > 0) enemyStrength -= damage;
+            printf("Dusmana %d hasar verdiniz. (Kalan Guc: %d)\n", damage, enemyStrength);
+        }
+            else {
+            int damage = enemyAttack - (enemyAttack * character->endurance / 100);
+            if (damage > 0) character->health -= damage;
+            printf("Dusmandan %d hasar aldiniz. (Kalan Can: %d)\n", damage, character->health);
+        }
+
+        if (character->agility == enemyAgility) {
+            if (rand() % 2 == 0) continue;
+        }
+    }
+
+
+    if (character->health > 0) {
+        printf("Savasi kazandiniz!\n");
+        int goldEarned = rand() % (maxGold - minGold + 1) + minGold;
+        character->money += goldEarned;
+        character->experience += xpReward;
+        printf("Para +%d, Tecrube +%d\n", goldEarned, xpReward);
+    } else {
+        printf("Savasi kaybettiniz...\n");
+    }
+}
+
+void levelUp(Character *character) {
+    int remainingPoints = 5;
+    int choice, points;
+
+    printf("\n=== Seviye Atladiniz! ===\n");
+    character->level += 1;
+    character->experience = 0;
+    printf("Yeni seviyeniz: %d\n", character->level);
+    printf("Beceri puani dagitmak icin toplam 5 puaniniz var.\n");
+
+    while (remainingPoints > 0) {
+        printf("\nKalan puan: %d\n", remainingPoints);
+        printf("Hangi becerinize puan eklemek istersiniz?\n");
+        printf("1. Guc (Su anki: %d)\n", character->strength);
+        printf("2. Ceviklik (Su anki: %d)\n", character->agility);
+        printf("3. Dayanýklilik (Su anki: %d)\n", character->endurance);
+        printf("4. Karizma (Su anki: %d)\n", character->charisma);
+        printf("5. Toplayicilik (Su anki: %d)\n", character->gathering_skill);
+        printf("Seciminizi yapin (1-5): ");
+        scanf("%d", &choice);
+
+        if (choice < 1 || choice > 5) {
+            printf("Gecersiz secim! Lutfen 1-5 arasinda bir deger girin.\n");
+            continue;
+        }
+
+        printf("Bu beceriye kac puan eklemek istersiniz? (1-%d): ", remainingPoints);
+        scanf("%d", &points);
+
+        if (points <= 0 || points > remainingPoints) {
+            printf("Gecersiz puan miktari! Lutfen 1-%d arasinda bir deger girin.\n", remainingPoints);
+            continue;
+        }
+
+        switch (choice) {
+            case 1:
+                if (character->strength + points > 25) {
+                    printf("Guc 25'i asamaz! Su anki: %d\n", character->strength);
+                } else {
+                    character->strength += points;
+                    remainingPoints -= points;
+                    printf("Guc +%d (Yeni: %d)\n", points, character->strength);
+                }
                 break;
             case 2:
-                if (ceviklik < 25) {
-                        ceviklik++;
-                        printf("Ceviklik artirildi!\n");
+                if (character->agility + points > 25) {
+                    printf("Ceviklik 25'i asamaz! Su anki: %d\n", character->agility);
+                } else {
+                    character->agility += points;
+                    remainingPoints -= points;
+                    printf("Ceviklik +%d (Yeni: %d)\n", points, character->agility);
                 }
-                else printf("Ceviklik maksimum seviyede!\n");
                 break;
             case 3:
-                if (dayaniklilik <25) {
-                        dayaniklilik++;
-                        printf("Dayaniklilik artirildi!\n");
+                if (character->endurance + points > 25) {
+                    printf("Dayaniklilik 25'i asamaz! Su anki: %d\n", character->endurance);
+                } else {
+                    character->endurance += points;
+                    remainingPoints -= points;
+                    printf("Dayaniklilik +%d (Yeni: %d)\n", points, character->endurance);
                 }
-                else printf("Dayaniklilik maksimum seviyede!\n");
                 break;
             case 4:
-                if (karizma < 25 )  {
-                        karizma++;
-                        printf("Karizma artirildi!\n");
+                if (character->charisma + points > 25) {
+                    printf("Karizma 25'i asamaz! Su anki: %d\n", character->charisma);
+                } else {
+                    character->charisma += points;
+                    remainingPoints -= points;
+                    printf("Karizma +%d (Yeni: %d)\n", points, character->charisma);
                 }
-                else printf("Karizma maksimum seviyede!\n");
                 break;
             case 5:
-                if (toplayicilik< 25) {
-                        toplayicilik++;
-                        printf("Toplayicilik artirildi!\n");
+                if (character->gathering_skill + points > 25) {
+                    printf("Toplayicilik 25'i asamaz! Su anki: %d\n", character->gathering_skill);
+                } else {
+                    character->gathering_skill += points;
+                    remainingPoints -= points;
+                    printf("Toplayicilik +%d (Yeni: %d)\n", points, character->gathering_skill);
                 }
-                else printf("Toplayicilik maksimum seviyede!\n");
                 break;
-            case 6:
-                moral += 10;
-                if (moral > 100) moral = 100;
-                printf("Moral artirildi!\n");
+        }
+    }
+
+    printf("\nBeceri puanlarinizi basariyla dagittiniz! Ana menuye donuluyor...\n");
+}
+
+void showStatus(Character *character) {
+    printf("\n=== Karakter Durumu ===\n");
+    printf("Ad: %s\n", character->name);
+    printf("Calgý: %s\n", character->instrument);
+    printf("Seviye: %d\n", character->level);
+    printf("Tecrube Puaný: %d/100\n", character->experience);
+    printf("Para: %d altýn\n", character->money);
+    printf("Can: %d/100\n", character->health);
+    printf("Tokluk: %d/100\n", character->hunger);
+    printf("Uyku: %d/100\n", character->sleep);
+    printf("Hijyen: %d/100\n", character->hygiene);
+
+    printf("\n=== Beceri Durumu ===\n");
+    printf("Guc: %d/25\n", character->strength);
+    printf("Ceviklik: %d/25\n", character->agility);
+    printf("Dayaniklilik: %d/25\n", character->endurance);
+    printf("Karizma: %d/25\n", character->charisma);
+    printf("Toplayicilik: %d/25\n", character->gathering_skill);
+
+    printf("\n=== Genel Durum ===\n");
+    if (character->health <= 20) {
+        printf("Uyari: Can seviyeniz kritik! Sifahaneye gitmeyi veya dinlenmeyi dusunun.\n");
+    }
+    if (character->hunger <= 20) {
+        printf("Uyari: Tokluk seviyeniz dusuk! Yemek yemeniz gerekiyor.\n");
+    }
+    if (character->sleep <= 20) {
+        printf("Uyari: Uyku seviyeniz dusuk! Dinlenmeniz gerekiyor.\n");
+    }
+    if (character->hygiene <= 20) {
+        printf("Uyari: Hijyen seviyeniz dusuk! Nehirde yikanmayi veya temizlenmeyi düþünün.\n");
+    }
+
+    printf("\nDurum bilgileri gosterildi. Ana menuye donmek icin bir tusa basin...\n");
+    getchar();
+    getchar();
+}
+
+void hype(Character *character) {
+
+    int choice;
+    while (1) {
+        printf("\n=== Moral Artirma Aktiviteleri ===\n");
+        printf("1. Enstruman cal ve sarki soyle\n");
+        printf("2. Dans et ve eglen\n");
+        printf("3. Doga yuruyusune cik\n");
+        printf("4. Ana menuye don\n");
+        printf("Seciminizi yapin: ");
+        scanf("%d", &choice);
+
+        switch (choice) {
+            case 1:
+                if (character->hygiene > 20) {
+                    printf("Enstruman calip sarki soylediniz. Moraliniz yukseldi!\n");
+                    character->charisma += 3;
+                    character->hygiene -= 10;
+                    character->hunger -= 5;
+                    character->health += 5;
+                    printf("Karizma +3, Hijyen -10, Tokluk -5, Can +5\n");
+                } else {
+                    printf("Hijyeniniz dusuk (20 veya alti)! Enstruman calmak icin hijyeninizi artirmaniz gerekiyor.\n");
+                }
                 break;
+
+            case 2:
+                printf("Dans edip eglendiniz. Kendinizi daha iyi hissediyorsunuz!\n");
+                character->hygiene -= 15;
+                character->health += 10;
+                character->sleep -= 5;
+                printf("Hijyen -15, Can +10, Uyku -5\n");
+                break;
+
+            case 3:
+                printf("Doga yuruyusune ciktiniz. Doganin icinde moral buldunuz!\n");
+                character->hunger -= 10;
+                character->sleep += 10;
+                character->health += 15;
+                character->gathering_skill += 2;
+                printf("Tokluk -10, Uyku +10, Can +15, Toplayicilik +2\n");
+                break;
+
+            case 4:
+                printf("Moral artirma etkinliklerinden ayrilarak ana menuye donuyorsunuz...\n");
+                return;
+
             default:
-                printf("Gecersiz secim! Lutfen 1 ile 7 arasinda bir secim yapin.\n");
-                continue;
+                printf("Gecersiz secim! Lutfen tekrar deneyin.\n");
         }
-        puan--;
+
+        if (character->hygiene > 100) character->hygiene = 100;
+        if (character->hygiene < 0) character->hygiene = 0;
+
+        if (character->health > 100) character->health = 100;
+        if (character->health < 0) character->health = 0;
+
+        if (character->hunger > 100) character->hunger = 100;
+        if (character->hunger < 0) character->hunger = 0;
+
+        if (character->sleep > 100) character->sleep = 100;
+        if (character->sleep < 0) character->sleep = 0;
+
+        if (character->charisma > 25) character->charisma = 25;
+        if (character->charisma < 3) character->charisma = 3;
+
+        if (character->gathering_skill > 25) character->gathering_skill = 25;
+        if (character->gathering_skill < 3) character->gathering_skill = 3;
     }
-    printf("Seviye atlama islemi tamamlandi. Ana menüye donuluyor...\n");
 }
 
-void kontrolTecrube() {
-    if (tecrube >= 100) {
-        printf("\nTebrikler! Tecrube puaniniz 100'e ulasti. Seviye atliyorsunuz!\n");
-        tecrube = 0; // Tecrübe sıfırlanır
-        seviye++;
-        printf("Yeni seviyeniz: %d\n", seviye);
-        seviyeAtla(); // Seviye atlama menüsüne geçiş
-    }
-}
+void eat(Character *character) {
 
-void kontrolNitelikler() {
-    // Temel nitelikler sınır kontrolü
-    if (tokluk > 100) tokluk = 100;
-    if (tokluk < 0) tokluk = 0;
+    int choice;
+    while (1) {
+        printf("\n=== Yemek Secenekleri ===\n");
+        printf("1. Ekmek (Fiyat: 5 altin, Tokluk +10)\n");
+        printf("2. Yahni (Fiyat: 20 altin, Tokluk +50)\n");
+        printf("3. Elma (Fiyat: 3 altin, Tokluk +5)\n");
+        printf("4. Ana menuye don\n");
+        printf("Seciminizi yapin: ");
+        scanf("%d", &choice);
 
-    if (uyku > 100) uyku = 100;
-    if (uyku < 0) uyku = 0;
+        switch (choice) {
+            case 1:
+                if (character->money >= 5) {
+                    printf("Ekmek yediniz, kendinizi daha iyi hissediyorsunuz.\n");
+                    character->money -= 5;
+                    character->hunger += 10;
+                    printf("Tokluk +10, Para -5\n");
+                } else {
+                    printf("Yeterli paraniz yok! (Gerekli: 5 altin)\n");
+                }
+                break;
 
-    if (moral > 100) moral = 100;
-    if (moral < 0) moral = 0;
+            case 2:
+                if (character->money >= 20) {
+                    printf("Yahni yediniz, kendinizi cok iyi hissediyorsunuz.\n");
+                    character->money -= 20;
+                    character->hunger += 50;
+                    printf("Tokluk +50, Para -20\n");
+                } else {
+                    printf("Yeterli paraniz yok! (Gerekli: 20 altin)\n");
+                }
+                break;
 
-    if (enerji > 100) enerji = 100;
-    if (enerji < 0) enerji = 0;
+            case 3:
+                if (character->money >= 3) {
+                    printf("Elma yediniz, tok kaldiniz.\n");
+                    character->money -= 3;
+                    character->hunger += 5;
+                    printf("Tokluk +5, Para -3\n");
+                } else {
+                    printf("Yeterli paraniz yok! (Gerekli: 3 altin)\n");
+                }
+                break;
 
-    if (hijyen > 100) hijyen = 100;
-    if (hijyen < 0) hijyen = 0;
+            case 4:
+                printf("Yemek yeme islemini sonlandirip ana menuye donuyorsunuz...\n");
+                return;
 
-    // Kritik seviyelerde uyarı mesajları
-    if (tokluk <= 20 && tokluk > 0) printf("UYARI: Tokluk kritik seviyede!\n");
-    if (uyku <= 20 && uyku > 0) printf("UYARI: Uyku kritik seviyede!\n");
-    if (moral <= 20 && moral > 0) printf("UYARI: Moral kritik seviyede!\n");
-
-    // Nitelikler 0'a düştüğünde can kaybı
-    if (tokluk == 0) {
-        printf("Tokluk 0! Caniniz 20 puan azaldi.\n");
-        can -= 20;
-    }
-    if (uyku == 0) {
-        printf("Uyku 0! Caniniz 10 puan azaldi.\n");
-        can -= 10;
-    }
-    if (moral == 0) {
-        printf("Moral 0! Caniniz 5 puan azaldi.\n");
-        can -= 5;
-    }
-    if (hijyen == 0) {
-        printf("Hijyen 0! Caniniz 5 puan azaldi.\n");
-        can -= 5;
-    }
-
-    // Can kontrolü
-    if (can > 100) can = 100;
-    if (can <= 0) { // Can sıfır olduğunda oyunun bitmesi
-        printf("\nOzanin cani tükendi. Oyun sona erdi!\n");
-        printf("Oyunu tekrar baslatmak ister misiniz? (E/H): ");
-
-        char cevap;
-        scanf(" %c", &cevap);
-
-        if (cevap == 'E' || cevap == 'e') {
-            // Değerleri yeniden başlat
-            can = 100; tokluk = 100; uyku = 100; moral = 100; enerji = 100; hijyen = 100; para = 10;
-            guc = 3; ceviklik = 3; dayaniklilik = 3; karizma = 3; toplayicilik = 3;
-
-            printf("Oyun yeniden basliyor...\n");
-        } else {
-            printf("Oyun kapatiliyor...\n");
-            exit(0); // Programı sonlandir
+            default:
+                printf("Gecersiz secim! Lutfen tekrar deneyin.\n");
         }
+
+        if (character->hunger > 100) character->hunger = 100;
+        if (character->hunger < 0) character->hunger = 0;
     }
 }
 
-void durumuGoster() {
-    printf("\n--- DURUM ---\n");
-    kontrolNitelikler(); // Merkezi kontrol
-    printf("Can: %d, Tokluk: %d, Uyku: %d, Moral: %d, Enerji: %d, Hijyen: %d, Para: %d\n",
-           can, tokluk, uyku, moral, enerji, hijyen, para);
-    printf("Guc: %d, Ceviklik: %d, Dayaniklilik: %d, Karizma: %d, Toplayicilik: %d\n",
-           guc, ceviklik, dayaniklilik, karizma, toplayicilik);
-}
+void sleep(Character *character) {
 
-// Oyundan çikisi kontrolü
-int oyundanCik() {
-    char cevap;
-    printf("\nOyundan cikmak istediginize emin misiniz? (E/H): ");
-    scanf(" %c", &cevap); // ' %c' bastaki bosluk ile önceki giristen kalan newline karakterini temizler
+    int sleepDuration;
+    printf("\n=== Uyuma ===\n");
+    printf("Ne kadar sure uyumak istersiniz? (1-10 saat): ");
+    scanf("%d", &sleepDuration);
 
-    if (cevap == 'E' || cevap == 'e') {
-        return 1; // Kullanici cikmak istiyor
-    } else {
-        printf("Oyuna devam ediliyor...\n");
-        return 0; // Kullanici çikmak istemiyor
+    if (sleepDuration < 1 || sleepDuration > 10) {
+        printf("Gecersiz sure! Lutfen 1 ile 10 saat arasinda bir deger girin.\n");
+        return;
     }
+
+    if (character->sleep <= 20) {
+        printf("Uykusuzluk nedeniyle can kaybi yasiyorsunuz!\n");
+        character->health -= 10;
+        if (character->health < 0) character->health = 0;
+        printf("Can -10 (Caniniiz su anda: %d)\n", character->health);
+    }
+
+    character->sleep += sleepDuration * 5;
+    if (character->sleep > 100) character->sleep = 100;
+
+    character->hunger -= sleepDuration * 2;
+    character->hygiene -= sleepDuration * 2;
+
+    if (sleepDuration >= 8) {
+        character->health += 5;
+        printf("Uzun sure uyudunuz, sagliginiz artti!\n");
+    }
+
+    printf("Uyku sureniz: %d saat\n", sleepDuration);
+    printf("Uyku seviyesi: %d\n", character->sleep);
+    printf("Tokluk: %d\n", character->hunger);
+    printf("Hijyen: %d\n", character->hygiene);
+
+    if (character->sleep > 100) character->sleep = 100;
+    if (character->sleep < 0) character->sleep = 0;
+
+    if (character->hunger > 100) character->hunger = 100;
+    if (character->hunger < 0) character->hunger = 0;
+
+    if (character->hygiene > 100) character->hygiene = 100;
+    if (character->hygiene < 0) character->hygiene = 0;
 }
