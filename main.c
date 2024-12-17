@@ -319,7 +319,7 @@ void goOnAdventure(Character *character) {
 
     while (1) {
         printf("\n=== Macera ===\n");
-        printf("1. Yakýn cevreden sifali bitki topla ve avlan\n");
+        printf("1. Yakin cevreden sifali bitki topla ve avlan\n");
         printf("2. Ormani kesfe cik (Kolay)\n");
         printf("3. Kayaliklari kesfe cik (Orta)\n");
         printf("4. Vadiyi kesfe cik (Zor)\n");
