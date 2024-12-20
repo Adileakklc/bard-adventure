@@ -524,7 +524,7 @@ void showStatus(Character *character) {
     printf("Calgi: %s\n", character->instrument);
     printf("Seviye: %d\n", character->level);
     printf("Tecrube Puani: %d/100\n", character->experience);
-    printf("Para: %d altýn\n", character->money);
+    printf("Para: %d altin\n", character->money);
     printf("Can: %d/100\n", character->health);
     printf("Tokluk: %d/100\n", character->hunger);
     printf("Uyku: %d/100\n", character->sleep);
